@@ -8,47 +8,80 @@
   window.onmessage = async (event) => {
     const postMessage = msg => window.parent.postMessage({ pluginMessage: msg }, '*');
 
-    const { type, apiKey, image } = event.data.pluginMessage;
+    const { type } = event.data.pluginMessage;
     //https://www.figma.com/plugin-docs/making-network-requests/
     if (type === 'postImage') {
+      const { apiKey, image } = event.data.pluginMessage;
+
       var formData = new FormData()
+      formData.append("image", image + "")
       formData.append("isTransparent", "true")
-      formData.append("image", image)
-      formData.append("platform", "figma")
+      // formData.append("platform", "figma")
 
       const token = "Token " + apiKey;
-      const url = "https://api.visualeyes.loceye.io/predict/"
+      const proxyUrl = "https://cors-anywhere.herokuapp.com/";
+      // const proxyUrl = "";
+      const apiUrl = "https://api.visualeyes.loceye.io/predict/"
 
-      fetch(url, {
+      fetch(proxyUrl + apiUrl, {
         method: "POST",
         body: formData,
         headers: {
-          Authorization: token,
-          "Access-Control-Allow-Origin": "*",
-          "Content-Type": "application/x-www-form-urlencoded",
+          "Authorization": token,
           "cache-control": "no-cache",
         },
       })
-        .then((response) => {
-          postMessage(response);
+
+        .then((res) => {
+          const { status } = res;
+
+          try {
+            if (status === 200) {
+              return res.json();
+            } else if (status === 400) {
+              throw "😱 We are deeply sorry, but something went terrible wrong!";
+            } else if (status === 401) {
+              throw "🙄 Your API key is not valid";
+            } else if (status === 403) {
+              throw "🚨 Your heatmaps limit has been exceeded";
+            }
+          }
+          finally { }
         })
-        .catch((err) => {
-          postMessage(err);
+        .then(async (json) => {
+          if (json.code !== "success") {
+            throw new Error("Error during fetching the heatmap");
+          }
+          const heatmapUrl = json.url;
+
+          const bytes = await new Promise((resolve, reject) => {
+            const img = new window.Image();
+            img.crossOrigin = "Anonymous";
+
+            img.onload = () => {
+              const { width, height } = img;
+              const canvas = document.createElement('canvas');
+              const context = canvas.getContext('2d')
+              canvas.width = width;
+              canvas.height = height;
+
+              context.clearRect(0, 0, canvas.width, canvas.height);
+              context.drawImage(img, 0, 0, width, height);
+
+              const imageData = context.getImageData(0, 0, width, height).data
+              const arrayBuffer = imageData.buffer;
+              const bytes = new Uint8Array(imageData)
+              resolve(bytes);
+            }
+            img.onerror = () => reject(new Error(`Could not decode bytes due to an error`));
+            img.src = proxyUrl + heatmapUrl;
+          });
+
+          postMessage({ type: 'heatmap', bytes });
         })
-      // var request = new XMLHttpRequest()
-      // request.open('POST', "https://api.visualeyes.loceye.io/predict/")
-      // request.withCredentials = "true";
-      // request.setRequestHeader("Access-Control-Allow-Origin", "*");
-      // request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-      // // request.setRequestHeader("cache-control", "no-cache");
-      // // request.setRequestHeader("Authorization", token);
-      // request.onload = () => {
-      //   window.parent.postMessage({ pluginMessage: request.response }, '*')
-      // };
-      // request.onerror = () => {
-      //   window.parent.postMessage({ pluginMessage: request.response }, '*')
-      // };
-      // request.send(formData)
+        .catch((error) => {
+          postMessage({ type: 'request-error', error });
+        })
     }
   }
 

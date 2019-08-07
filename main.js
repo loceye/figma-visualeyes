@@ -28,7 +28,7 @@ async function generateHeatmap() {
     } else {
       selectedFrames.map(async (frame) => {
         const base64 = await convertFrameToBase64(frame);
-        postImage(base64, apiKey);
+        postImage(base64, apiKey, frame);
       });
     }
   }
@@ -41,12 +41,54 @@ async function convertFrameToBase64(frame) {
   return imgBase64;
 }
 
-async function postImage(image, apiKey) {
+async function postImage(image, apiKey, frame) {
   figma.showUI(__html__, { visible: false });
   figma.ui.postMessage({ type: "postImage", image, apiKey });
-  // figma.ui.postMessage({ type: "postImage" });
+
   figma.ui.onmessage = async (msg) => {
-    console.log(msg);
+    const { type } = msg;
+
+    switch (type) {
+      case "heatmap":
+        const { bytes } = msg;
+        const image = figma.createImage(bytes);
+        console.log(image);
+        console.log(bytes);
+
+        const fill = {
+          type: "IMAGE",
+          imageHash: image.hash,
+          scaleMode: "FIT",
+          scalingFactor: 1,
+          filters: {
+            exposure: 0.0,
+            contrast: 0.0,
+            saturation: 0.0,
+            temperature: 0.0,
+            tint: 0.0,
+            highlights: 0.0,
+            shadows: 0.0,
+          },
+        };
+
+        const rect = figma.createRectangle();
+        rect.resize(frame.width, frame.height);
+        rect.x = 0;
+        rect.y = 0;
+        rect.fills = [fill];
+
+        frame.appendChild(rect);
+        break;
+
+      case "request-error":
+        const { error } = msg;
+        alert(error);
+        break;
+
+      default:
+        break;
+    }
+
     figma.closePlugin();
   };
 }
