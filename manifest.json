@@ -1,0 +1,17 @@
+{
+  "name": "VisualEyes",
+  "id": "740542057689267294",
+  "api": "1.0.0",
+  "main": "main.js",
+  "ui": "ui.html",
+  "menu": [
+    {
+      "name": "🔥 Generate Heatmap",
+      "command": "generateHeatmap"
+    },
+    {
+      "name": "🔑 Set your API key",
+      "command": "setApiKey"
+    }
+  ]
+}

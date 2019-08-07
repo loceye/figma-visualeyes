@@ -1,0 +1,66 @@
+<h2>Set API key</h2>
+<p>Find your API key on our <a href="https://visualeyes.loceye.io" class="anchor">website</a></p>
+<p>API key: <input id="key" value=""></p>
+<button id="set">Set</button>
+<button id="cancel">Cancel</button>
+<script>
+
+  window.onmessage = async (event) => {
+    const postMessage = msg => window.parent.postMessage({ pluginMessage: msg }, '*');
+
+    const { type, apiKey, image } = event.data.pluginMessage;
+    //https://www.figma.com/plugin-docs/making-network-requests/
+    if (type === 'postImage') {
+      var formData = new FormData()
+      formData.append("isTransparent", "true")
+      formData.append("image", image)
+      formData.append("platform", "figma")
+
+      const token = "Token " + apiKey;
+      const url = "https://api.visualeyes.loceye.io/predict/"
+
+      fetch(url, {
+        method: "POST",
+        body: formData,
+        headers: {
+          Authorization: token,
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/x-www-form-urlencoded",
+          "cache-control": "no-cache",
+        },
+      })
+        .then((response) => {
+          postMessage(response);
+        })
+        .catch((err) => {
+          postMessage(err);
+        })
+      // var request = new XMLHttpRequest()
+      // request.open('POST', "https://api.visualeyes.loceye.io/predict/")
+      // request.withCredentials = "true";
+      // request.setRequestHeader("Access-Control-Allow-Origin", "*");
+      // request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+      // // request.setRequestHeader("cache-control", "no-cache");
+      // // request.setRequestHeader("Authorization", token);
+      // request.onload = () => {
+      //   window.parent.postMessage({ pluginMessage: request.response }, '*')
+      // };
+      // request.onerror = () => {
+      //   window.parent.postMessage({ pluginMessage: request.response }, '*')
+      // };
+      // request.send(formData)
+    }
+  }
+
+  document.getElementById('set').onclick = () => {
+    const textbox = document.getElementById('key');
+    const apiKey = textbox.value
+    parent.postMessage({ pluginMessage: { type: 'set-api-key', apiKey } }, '*')
+  }
+
+  document.getElementById('cancel').onclick = () => {
+    parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
+  }
+
+
+</script>
