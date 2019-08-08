@@ -1,26 +1,125 @@
-<h2>Set API key</h2>
-<p>Find your API key on our <a href="https://visualeyes.loceye.io" class="anchor">website</a></p>
-<p>API key: <input id="key" value=""></p>
-<button id="set">Set</button>
-<button id="cancel">Cancel</button>
+<link href="https://fonts.googleapis.com/css?family=Rubik:400,700&display=swap" rel="stylesheet">
+<style>
+  * {
+    font-family: 'Rubik', sans-serif;
+  }
+
+  h2 {
+    color: #212121;
+  }
+
+  p {
+    font-size: 14px;
+    color: #212121;
+  }
+
+  label {
+    margin-right: 0.5rem;
+    font-size: 10px;
+    color: #666;
+  }
+
+  button {
+    display: inline-block;
+    -ms-flex-negative: 0;
+    flex-shrink: 0;
+    margin: 1px 0 1px 0;
+    padding: 5px 16px 5px 16px;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    outline: none;
+    font-weight: bold;
+  }
+
+  a {
+    color: #5B42E3
+  }
+
+  input {
+    font-weight: 400;
+    font-size: 11px;
+    line-height: 16px;
+    letter-spacing: 0.005em;
+    position: relative;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    overflow: visible;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    width: 100%;
+    height: 30px;
+    margin: 1px 0 1px 0;
+    padding: 8px 4px 8px 7px;
+    color: #3E21DE;
+    border: 1px solid #E7E4FB;
+    border-radius: 6px;
+    outline: none;
+    background-color: #E7E4FB;
+  }
+
+  input:hover {
+    border: 1px solid #C3BAF5;
+  }
+
+  input:active,
+  input:focus {
+    border: 1px solid #3E21DE;
+  }
+
+  .primary {
+    background-color: #3E21DE;
+    color: #fff;
+    margin-left: 0.5rem
+  }
+
+  .secondary {
+    background-color: #E7E4FB;
+    color: #3E21DE
+  }
+
+  .row {
+    margin-bottom: 1rem;
+  }
+
+  .button-row {
+    display: flex;
+    flex-direction: row-reverse;
+  }
+
+  #link {
+    color: #5B42E3;
+    cursor: pointer;
+  }
+</style>
+
+<h2>Set your API key</h2>
+<p>Request your unique API key on <span id='link'>our website.</span></p>
+<div class="row"><label>API key:</label><input id="key" value=""></div>
+<div class="button-row">
+  <button id="set" class="primary">Set</button>
+  <button id="cancel" class="secondary">Cancel</button>
+</div>
+
 <script>
+
+
 
   window.onmessage = async (event) => {
     const postMessage = msg => window.parent.postMessage({ pluginMessage: msg }, '*');
 
     const { type } = event.data.pluginMessage;
-    //https://www.figma.com/plugin-docs/making-network-requests/
     if (type === 'postImage') {
-      const { apiKey, image } = event.data.pluginMessage;
+      const { apiKey, image, isLast } = event.data.pluginMessage;
 
       var formData = new FormData()
       formData.append("image", image + "")
       formData.append("isTransparent", "true")
-      // formData.append("platform", "figma")
+      formData.append("platform", "figma")
 
       const token = "Token " + apiKey;
       const proxyUrl = "https://cors-anywhere.herokuapp.com/";
-      // const proxyUrl = "";
       const apiUrl = "https://api.visualeyes.loceye.io/predict/"
 
       fetch(proxyUrl + apiUrl, {
@@ -54,43 +153,57 @@
           }
           const heatmapUrl = json.url;
 
-          const bytes = await new Promise((resolve, reject) => {
-            const img = new window.Image();
-            img.crossOrigin = "Anonymous";
+          try {
+            const bytes = await new Promise((resolve, reject) => {
+              const img = new window.Image();
+              img.crossOrigin = "Anonymous";
 
-            img.onload = () => {
-              const { width, height } = img;
-              const canvas = document.createElement('canvas');
-              const context = canvas.getContext('2d')
-              canvas.width = width;
-              canvas.height = height;
+              img.onload = () => {
+                const { width, height } = img;
 
-              context.clearRect(0, 0, canvas.width, canvas.height);
-              context.drawImage(img, 0, 0, width, height);
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d')
+                canvas.width = width;
+                canvas.height = height;
 
-              const imageData = context.getImageData(0, 0, width, height).data
-              const arrayBuffer = imageData.buffer;
-              const bytes = new Uint8Array(imageData)
-              resolve(bytes);
-            }
-            img.onerror = () => reject(new Error(`Could not decode bytes due to an error`));
-            img.src = proxyUrl + heatmapUrl;
-          });
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                context.drawImage(img, 0, 0, width, height);
+                canvas.toBlob(blob => {
+                  const reader = new FileReader()
+                  reader.onload = () => resolve(new Uint8Array(reader.result))
+                  reader.onerror = () => reject('Could not read from blob')
+                  reader.readAsArrayBuffer(blob)
+                })
+              }
+              img.onerror = () => reject(`Could not decode bytes due to an error`);
+              img.src = proxyUrl + heatmapUrl;
+            });
 
-          postMessage({ type: 'heatmap', bytes });
+            postMessage({ type: 'heatmap', bytes, shouldClose: isLast });
+          }
+          finally { }
         })
         .catch((error) => {
           postMessage({ type: 'request-error', error });
         })
     }
+    else if (type === "set-previous-api-key") {
+      const { previousApiKey } = event.data.pluginMessage;
+
+      const textbox = document.getElementById('key');
+      textbox.value = previousApiKey
+    }
+
   }
 
+  document.getElementById('link').onclick = () => {
+    window.open("https://visualeyes.loceye.io/subscribe", "_system");
+  }
   document.getElementById('set').onclick = () => {
     const textbox = document.getElementById('key');
     const apiKey = textbox.value
     parent.postMessage({ pluginMessage: { type: 'set-api-key', apiKey } }, '*')
   }
-
   document.getElementById('cancel').onclick = () => {
     parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
   }

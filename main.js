@@ -11,24 +11,31 @@ async function setApiKey() {
       const { apiKey } = msg;
       figma.root.setPluginData("apiKey", apiKey);
     }
-    figma.closePlugin();
+    figma.closePlugin(
+      "👏 Your new API key has been set. \nRun 'Generate Heatmap' command to test it!"
+    );
   };
+
+  const previousApiKey = figma.root.getPluginData("apiKey");
+  figma.ui.postMessage({ type: "set-previous-api-key", previousApiKey });
 }
 
 async function generateHeatmap() {
   const selectedFrames = getSelectedFrameNodes();
 
   if (selectedFrames.length === 0) {
-    figma.closePlugin("You must select at least one frame.");
+    figma.closePlugin("🥺 You must select at least one frame.");
   } else {
     // Check API key existence
     const apiKey = figma.root.getPluginData("apiKey");
     if (!apiKey) {
       setApiKey();
     } else {
-      selectedFrames.map(async (frame) => {
+      selectedFrames.map(async (frame, index) => {
+        // 🐛 TODO: Should make some changes to handle multiple Frames asynchronous
+        const isLast = selectedFrames.length - 1 === index;
         const base64 = await convertFrameToBase64(frame);
-        postImage(base64, apiKey, frame);
+        await postImage(base64, apiKey, frame, isLast);
       });
     }
   }
@@ -41,25 +48,26 @@ async function convertFrameToBase64(frame) {
   return imgBase64;
 }
 
-async function postImage(image, apiKey, frame) {
+async function postImage(image, apiKey, frame, isLast) {
   figma.showUI(__html__, { visible: false });
-  figma.ui.postMessage({ type: "postImage", image, apiKey });
+  figma.ui.postMessage({ type: "postImage", image, apiKey, isLast });
 
   figma.ui.onmessage = async (msg) => {
     const { type } = msg;
 
     switch (type) {
       case "heatmap":
-        const { bytes } = msg;
+        const { bytes, shouldClose } = msg;
         const image = figma.createImage(bytes);
-        console.log(image);
-        console.log(bytes);
-
-        const fill = {
+        const imageFill = {
           type: "IMAGE",
           imageHash: image.hash,
-          scaleMode: "FIT",
+          imageTransform: [[1, 0, 0], [0, 1, 0]],
+          blendMode: "NORMAL",
+          opacity: 1,
+          scaleMode: "FILL",
           scalingFactor: 1,
+          visible: true,
           filters: {
             exposure: 0.0,
             contrast: 0.0,
@@ -71,25 +79,27 @@ async function postImage(image, apiKey, frame) {
           },
         };
 
-        const rect = figma.createRectangle();
-        rect.resize(frame.width, frame.height);
-        rect.x = 0;
-        rect.y = 0;
-        rect.fills = [fill];
+        const rectangle = figma.createRectangle();
+        rectangle.name = "Heatmap";
+        rectangle.resize(frame.width, frame.height);
+        rectangle.x = 0;
+        rectangle.y = 0;
+        rectangle.fills = [imageFill];
 
-        frame.appendChild(rect);
+        frame.appendChild(rectangle);
+
+        // if (shouldClose)
+        figma.closePlugin("🎉 Bazinga!");
         break;
 
       case "request-error":
         const { error } = msg;
-        alert(error);
-        break;
+        figma.closePlugin(error);
 
       default:
+        figma.closePlugin();
         break;
     }
-
-    figma.closePlugin();
   };
 }
 
