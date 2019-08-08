@@ -119,15 +119,14 @@
       formData.append("platform", "figma")
 
       const token = "Token " + apiKey;
-      const proxyUrl = "https://cors-anywhere.herokuapp.com/";
       const apiUrl = "https://api.visualeyes.loceye.io/predict/"
 
-      fetch(proxyUrl + apiUrl, {
+      fetch(apiUrl, {
         method: "POST",
         body: formData,
         headers: {
           "Authorization": token,
-          "cache-control": "no-cache",
+          // "cache-control": "no-cache",
         },
       })
 
@@ -176,7 +175,7 @@
                 })
               }
               img.onerror = () => reject(`Could not decode bytes due to an error`);
-              img.src = proxyUrl + heatmapUrl;
+              img.src = heatmapUrl;
             });
 
             postMessage({ type: 'heatmap', bytes, shouldClose: isLast });

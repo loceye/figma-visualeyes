@@ -23,6 +23,8 @@ VisualEyes plugin works as simple as that:
 
 ## Where can I find my API key?
 
-We just published our Beta version and expanding our Beta testing audience. If you're interested in using our plugin, please visit our website and subscribe in our list. Immediately you'll recieve an email with your unique API key.
+We just published our Beta version and expanding our testing audience. If you're interested in using VisualEyes plugin, please visit our website and subscribe in our list. Immediately you'll recieve an email with your unique API key.
 
-Request API key [here](https://visualeyes.loceye.io/subscribe)
+Request your API key [here](https://visualeyes.loceye.io/subscribe)
+
+🍻 Enjoy
