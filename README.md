@@ -1,22 +1,28 @@
-This plugin template uses Typescript. If you are familiar with Javascript, Typescript will
-look very familiar. In fact, valid Javascript code is already valid Typescript code.
+# VisualEyes Figma plugin
 
-Typescript adds type annotations to variables. This allows code editors such as Visual Studio Code
-to provide information about the Figma API while you are writing code, as well as help catch bugs
-you previously didn't notice.
+<div align="center">
+  <img width="150px" src="./assets/logo.png"/>
+</div>
+<br/>
+<div align="center">
+  Generate attention heatmaps without ever leaving your favorite design environment.
+</div>
+<br/>
+<img src="./assets/demo.gif"/>
 
-For more information, visit https://www.typescriptlang.org/
+## Description
 
-Using Typescript requires a compiler to convert Typescript (code.ts) into Javascript (code.js)
-for the browser to run.
+Validate your design decisions inside your favourite design tool. We combine leading neuroscience research with AI to accurately predict how people will react to your digital designs.
 
-To get the TypeScript compiler working:
+## How it works
 
-1. Download Visual Studio Code if you haven't already: https://code.visualstudio.com/.
-2. Install the TypeScript compiler globally: `sudo npm install -g typescript`.
-3. Open this directory in Visual Studio Code.
-4. Compile TypeScript to JavaScript: Run the "Terminal > Run Build Task..." menu item,
-    then select "tsc: watch - tsconfig.json". You will have to do this again every time
-    you reopen Visual Studio Code.
+VisualEyes plugin works as simple as that:
 
-That's it! Visual Studio Code will regenerate the JavaScript file every time you save.
+1. Select a Figma Frame and run the "🔥 Generate Heatmap" command.
+2. After a few seconds you'll get a Rectangle layer filled with the transparent Attention Heatmap inside your Frame.
+
+## Where can I find my API key?
+
+We just published our Beta version and expanding our Beta testing audience. If you're interested in using our plugin, please visit our website and subscribe in our list. Immediately you'll recieve an email with your unique API key.
+
+Request API key [here](https://visualeyes.loceye.io/subscribe)
