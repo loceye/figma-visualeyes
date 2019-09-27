@@ -1,0 +1,17 @@
+{
+    "name": "VisualEyes ReactJS",
+    "id": "740542057689267294",
+    "api": "1.0.0",
+    "main": "dist/code.js",
+    "ui": "dist/ui.html",
+    "menu": [
+        {
+            "name": "🔥 Run the plugin",
+            "command": "generateHeatmap"
+        },
+        {
+            "name": "🔑 Set your API key",
+            "command": "setApiKey"
+        }
+    ]
+}
