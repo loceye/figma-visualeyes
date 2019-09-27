@@ -1,7 +1,7 @@
 import generateInterjection from "interjection-js";
 
-export const MIN_AOI_WIDTH = 70;
-export const MIN_AOI_HEIGHT = 32;
+export const MIN_AOI_WIDTH = 10;
+export const MIN_AOI_HEIGHT = 10;
 export const API_URL = "https://api.visualeyes.design/predict/";
 
 function selectRandomFromArray(arr) {
@@ -24,7 +24,9 @@ function randomEmoji() {
 }
 
 export const USEFUL_TIPS = [
-  "Create Areas of Interest by drawing a Rectangle named AOI inside your Artboard...",
+  "The AOI Rectange should be placed at the top Frame...",
+
+  "Create Areas of Interest by drawing a Rectangle named AOI inside your Frame...",
   "The attention is higher on the red areas...",
   "Clarity scoring based on custom demogrpahics would be available soon...",
   "A/B testing small UI tweaks is a common use case of VisualEyes..."
@@ -35,13 +37,13 @@ export const ON_BOARDING = {
   tips: [
     {
       title: "🔥 How to generate your Attention Heatmap:",
-      steps: ["Select an Artboard ", "Run the plugin command"]
+      steps: ["Select a Frame ", "Run the plugin command"]
     },
     {
       title: "📦 How to create Areas of Interest:",
       steps: [
         "Create a Rectangle named AOI",
-        "Select the Artboard",
+        "Select the Frame",
         "Run the plugin command"
       ]
     }
@@ -67,8 +69,8 @@ export const AOI_ERRORS = {
     layerName: `🚨 Too small (minimum ${MIN_AOI_WIDTH}x${MIN_AOI_HEIGHT})`
   },
   placement: {
-    message: `😱 One of your rectangles is outside the current Artboard.`,
-    layerName: `🚨 Off the current Artboard`
+    message: `😱 One of your rectangles is outside the current Frame.`,
+    layerName: `🚨 Off the current Frame`
   }
 };
 
