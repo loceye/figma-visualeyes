@@ -7,6 +7,13 @@
     font-family: "Rubik", sans-serif;
   }
 
+  iframe {
+    display: block;
+    width: 600px;
+    height: 488px;
+    pointer-events: auto;
+  }
+
   h2 {
     color: #212121;
   }
@@ -32,6 +39,11 @@
     border-radius: 6px;
     outline: none;
     font-weight: bold;
+  }
+
+  #app {
+    min-width: 400px;
+    min-height: 800px;
   }
 
   a {
@@ -97,12 +109,14 @@
   }
 </style>
 
-<h2>Set your API key</h2>
-<p>Request your unique API key on <span id="link">our website.</span></p>
-<div class="row"><label>API key:</label><input id="key" value="" /></div>
-<div class="button-row">
-  <button id="set" class="primary">Set</button>
-  <button id="cancel" class="secondary">Cancel</button>
+<div id="app">
+  <h2>Set your API key</h2>
+  <p>Request your unique API key on <span id="link">our website.</span></p>
+  <div class="row"><label>API key:</label><input id="key" value="" /></div>
+  <div class="button-row">
+    <button id="set" class="primary">Set</button>
+    <button id="cancel" class="secondary">Cancel</button>
+  </div>
 </div>
 
 <script>
@@ -112,18 +126,18 @@
 
     const { type } = event.data.pluginMessage;
     if (type === "postImage") {
-      const { apiKey, image, isLast, hasAOI, areas } = event.data.pluginMessage;
+      const { apiKey, image, isLast, hasAOI, aoi } = event.data.pluginMessage;
 
       var formData = new FormData();
       formData.append("image", image + "");
       formData.append("isTransparent", "true");
       formData.append("platform", "figma");
       if (hasAOI) {
-        formData.append("aoi", JSON.stringify(areas));
+        formData.append("aoi", JSON.stringify(aoi));
       }
 
       const token = "Token " + apiKey;
-      const apiUrl = "https://api.visualeyes.loceye.io/predict/";
+      const apiUrl = "https://api.visualeyes.design/predict/";
 
       fetch(apiUrl, {
         method: "POST",
@@ -143,6 +157,8 @@
               throw "😱 We are deeply sorry, but something went terrible wrong!";
             } else if (status === 401) {
               throw "🙄 Your API key is not valid";
+            } else if (status === 402) {
+              throw "🌈 You should upgrade your account to access this feature";
             } else if (status === 403) {
               throw "🚨 Your heatmaps limit has been exceeded";
             }
@@ -154,6 +170,7 @@
             throw new Error("Error during fetching the heatmap");
           }
           const heatmapUrl = json.url;
+          const areas = json.aoi;
 
           try {
             const bytes = await new Promise((resolve, reject) => {
@@ -183,9 +200,9 @@
             });
 
             const scores = hasAOI
-              ? JSON.parse(areas).map(area => ({
-                  id: area.id,
-                  score: Math.floor(Math.random() * Math.floor(100))
+              ? aoi.map(rect => ({
+                  id: rect.id,
+                  score: areas.find(area => area.id === rect.id).score
                 }))
               : [];
 
@@ -206,8 +223,74 @@
 
       const textbox = document.getElementById("key");
       textbox.value = previousApiKey;
+    } else if (type === "onboarding") {
+      const app = document.getElementById("app");
+
+      while (app.firstChild) {
+        app.removeChild(app.firstChild);
+      }
+
+      const title = createTextHTMLElement("H2", "Welcome on board");
+      const description = createTextHTMLElement(
+        "p",
+        "Some tips before you start using our plugin:"
+      );
+
+      const footer = createTextHTMLElement(
+        "small",
+        "Learn more about the usage of our plugin "
+      );
+      const link = document.createElement("a");
+      link.href = "https://www.visualeyes.design";
+      link.target = "_blank";
+      link.id = "link";
+      link.appendChild(document.createTextNode("here"));
+      footer.appendChild(link);
+
+      const heatmapDescription = createTextHTMLElement(
+        "h4",
+        "🔥 How to generate your Attention Heatmap:"
+      );
+      const heatmapList = document.createElement("ol");
+      const heatmapStep1 = createTextHTMLElement("li", "Select an Artboard");
+      const heatmapStep2 = createTextHTMLElement(
+        "li",
+        "Run the plugin command"
+      );
+      heatmapList.appendChild(heatmapStep1);
+      heatmapList.appendChild(heatmapStep2);
+
+      const aoiDescription = createTextHTMLElement(
+        "h4",
+        "📦 How to create Areas of Interest:"
+      );
+      const aoiList = document.createElement("ol");
+      const aoiStep1 = createTextHTMLElement(
+        "li",
+        "Create a Rectangle named AOI"
+      );
+      const aoiStep2 = createTextHTMLElement("li", "Select the Artboard");
+      const aoiStep3 = createTextHTMLElement("li", "Run the plugin command");
+      aoiList.appendChild(aoiStep1);
+      aoiList.appendChild(aoiStep2);
+      aoiList.appendChild(aoiStep3);
+
+      app.appendChild(title);
+      app.appendChild(description);
+      app.appendChild(heatmapDescription);
+      app.appendChild(heatmapList);
+      app.appendChild(aoiDescription);
+      app.appendChild(aoiList);
+      app.appendChild(footer);
     }
   };
+
+  function createTextHTMLElement(node, text) {
+    const element = document.createElement(node);
+    const textElement = document.createTextNode(text);
+    element.appendChild(textElement);
+    return element;
+  }
 
   document.getElementById("link").onclick = () => {
     window.open(

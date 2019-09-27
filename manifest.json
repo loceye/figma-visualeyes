@@ -6,12 +6,8 @@
   "ui": "ui.html",
   "menu": [
     {
-      "name": "🔥 Generate Heatmap",
+      "name": "🔥 Run the plugin",
       "command": "generateHeatmap"
-    },
-    {
-      "name": "🚧 AOI prediction",
-      "command": "predictAOI"
     },
     {
       "name": "🔑 Set your API key",

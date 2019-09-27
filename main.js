@@ -41,12 +41,15 @@ function findAOILayers() {
         figma.notify(
           " 😱 One of your rectangles is outside the current Frame."
         );
+        rect.opacity = 0;
+        rect.name = "🚨 Outside Frame";
         return false;
       } else if (isRectSmall(rect)) {
         figma.notify(
           " 👎 One of your rectangles was not big enough (minimum 70x32 pixels)"
         );
-        return false;
+        rect.opacity = 0;
+        rect.name = "🚨 Too Small (min 70x32)";
       } else {
         rect.fills = [
           {
@@ -101,6 +104,7 @@ async function drawAOIRectangles(rectangles, scores) {
     const scoreText = figma.createText();
     const group = figma.group([scoreText, scoreBackground, rect], rect.parent);
     group.name = `AOI Group ${1 + index}`;
+    group.locked = true;
 
     // background.resize(rect.width, rect.height);
     // background.x = rect.x;
@@ -184,6 +188,14 @@ async function predictAOI() {
 }
 
 async function generateHeatmap() {
+  figma.showUI(__html__, { visible: true, width: 500 height: 400 });
+
+  figma.ui.postMessage({
+    type: "onboarding"
+  });
+
+  return;
+
   const selectedFrames = getSelectedFrameNodes();
 
   if (selectedFrames.length === 0) {
@@ -213,7 +225,7 @@ async function convertFrameToBase64(frame) {
 
 async function postImage(image, apiKey, frame, isLast, hasAOI, rectangles) {
   figma.showUI(__html__, { visible: false });
-  const areas = rectangles.map(rect => ({
+  const aoi = rectangles.map(rect => ({
     points: [
       { x: rect.x, y: rect.y, index: 0 },
       { x: rect.x + rect.width, y: rect.y, index: 1 },
@@ -229,7 +241,7 @@ async function postImage(image, apiKey, frame, isLast, hasAOI, rectangles) {
     apiKey,
     isLast,
     hasAOI,
-    areas: JSON.stringify(areas)
+    aoi
   });
 
   figma.ui.onmessage = async msg => {
