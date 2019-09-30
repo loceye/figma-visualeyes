@@ -1,5 +1,11 @@
 const { arraybufferToBase64 } = require("./utils/arraybufferToBase64.js");
-const { MESSAGES, AOI_ERRORS, getRandomTip } = require("./utils/constants.js");
+const {
+  MESSAGES,
+  AOI_ERRORS,
+  getRandomTip,
+  MIN_AOI_WIDTH,
+  MIN_AOI_HEIGHT
+} = require("./utils/constants.js");
 
 // showUIAsync() function handles the PING-PONG communication
 var isUIReady = false;
@@ -82,9 +88,9 @@ function findAOILayers() {
         rect.opacity = 0;
         rect.name = "🚨 Outside Frame";
       } else if (isRectSmall(rect)) {
-        // figma.notify(' 👎 One of your rectangles was not big enough (minimum 70x32 pixels)');
+        // figma.notify(' 👎 One of your rectangles was not big enough (minimum ${MIN_AOI_WIDTH}x${MIN_AOI_HEIGHT} pixels)');
         rect.opacity = 0;
-        rect.name = "🚨 Too Small (min 70x32)";
+        rect.name = `🚨 Too Small (min ${MIN_AOI_WIDTH}x${MIN_AOI_HEIGHT})`;
       } else {
         rect.fills = [
           {
@@ -126,7 +132,7 @@ function isRectOutsideFrame(rect, frame) {
 }
 
 function isRectSmall(rect) {
-  return rect.width < 70 || rect.height < 32;
+  return rect.width < MIN_AOI_WIDTH || rect.height < MIN_AOI_HEIGHT;
 }
 
 function generateHeatmap() {
@@ -184,17 +190,26 @@ async function startProcess() {
       figma.root.setPluginData("hasUsedAOI", "true");
     }
 
+    console.log("here1");
+
     const apiKey = figma.root.getPluginData("apiKey");
+    console.log("here2");
     const frame = selectedFrames[0];
+    console.log("here3");
     const base64 = await convertFrameToBase64(frame);
+    console.log("here4");
     postImage(base64, apiKey, frame, hasAOI, rectangles);
+    console.log("here5");
   }
 }
 
 async function convertFrameToBase64(frame) {
   const exportSettings = { format: "JPG", contentsOnly: true };
   const arraybuffer = await frame.exportAsync(exportSettings);
+  console.log(arraybuffer.length);
+
   const imgBase64 = "data:image/jpg;base64," + arraybufferToBase64(arraybuffer);
+  console.log("here9");
 
   return imgBase64;
 }
