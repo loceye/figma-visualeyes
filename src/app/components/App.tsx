@@ -26,10 +26,18 @@ const App = ({}) => {
         const { message } = event.data.pluginMessage;
         parent.postMessage({ pluginMessage: { type: "pong", message } }, "*");
       } else if (type === "post-image") {
-        const { apiKey, image, hasAOI, aoi } = event.data.pluginMessage;
+        const { apiKey, arraybuffer, hasAOI, aoi } = event.data.pluginMessage;
+
+        const imgBase64 =
+          "data:image/jpg;base64," +
+          btoa(
+            new Uint8Array(arraybuffer).reduce((data, byte) => {
+              return data + String.fromCharCode(byte);
+            }, "")
+          );
 
         var formData = new FormData();
-        formData.append("image", image + "");
+        formData.append("image", imgBase64 + "");
         formData.append("svg", "true");
         formData.append("platform", "figma");
         if (hasAOI) {
@@ -40,32 +48,8 @@ const App = ({}) => {
 
         postImage(formData, token)
           .then(async svg => {
-            const bytes = await new Promise((resolve, reject) => {
-              const img = new window.Image();
-              img.crossOrigin = "Anonymous";
-              img.onload = () => {
-                const { width, height } = img;
-                const canvas = document.createElement("canvas");
-                const context = canvas.getContext("2d");
-                canvas.width = width;
-                canvas.height = height;
-                context.clearRect(0, 0, canvas.width, canvas.height);
-                context.drawImage(img, 0, 0, width, height);
-                canvas.toBlob(blob => {
-                  const reader = new FileReader();
-                  reader.onload = () => resolve(new Uint8Array(reader.result));
-                  reader.onerror = () => reject("Could not read from blob");
-                  reader.readAsArrayBuffer(blob);
-                });
-              };
-              img.onerror = () =>
-                reject(`Could not decode bytes due to an error`);
-              img.src =
-                "https://api.visualeyes.design/image/generic-unlimited_d7afe0a8e05f11e982c42a6425df7a1e.png";
-            });
-
             parent.postMessage(
-              { pluginMessage: { type: "svg-result", svg, bytes } },
+              { pluginMessage: { type: "svg-result", svg } },
               "*"
             );
           })

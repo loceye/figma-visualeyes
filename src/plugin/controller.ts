@@ -1,4 +1,3 @@
-const { arraybufferToBase64 } = require("./utils/arraybufferToBase64.js");
 const {
   MESSAGES,
   AOI_ERRORS,
@@ -190,35 +189,24 @@ async function startProcess() {
       figma.root.setPluginData("hasUsedAOI", "true");
     }
 
-    console.log("here1");
-
     const apiKey = figma.root.getPluginData("apiKey");
-    console.log("here2");
     const frame = selectedFrames[0];
-    console.log("here3");
-    const base64 = await convertFrameToBase64(frame);
-    console.log("here4");
-    postImage(base64, apiKey, frame, hasAOI, rectangles);
-    console.log("here5");
+    const arraybuffer = await convertFrameToArraybuffer(frame);
+    postImage(arraybuffer, apiKey, frame, hasAOI, rectangles);
   }
 }
 
-async function convertFrameToBase64(frame) {
+async function convertFrameToArraybuffer(frame) {
   const exportSettings = { format: "JPG", contentsOnly: true };
   const arraybuffer = await frame.exportAsync(exportSettings);
-  console.log(arraybuffer.length);
-
-  const imgBase64 = "data:image/jpg;base64," + arraybufferToBase64(arraybuffer);
-  console.log("here9");
-
-  return imgBase64;
+  return arraybuffer;
 }
 
-function postImage(image, apiKey, frame, hasAOI, aoi) {
+function postImage(arraybuffer, apiKey, frame, hasAOI, aoi) {
   showUIAsync(__html__, { visible: false }).then(() => {
     figma.ui.postMessage({
       type: "post-image",
-      image,
+      arraybuffer,
       apiKey,
       hasAOI,
       aoi
@@ -231,6 +219,31 @@ function postImage(image, apiKey, frame, hasAOI, aoi) {
         case "svg-result":
           const { svg } = msg;
           const result = figma.createNodeFromSvg(svg);
+          result.name = "VisualEyes";
+          result.children
+            .map(node => {
+              const children =
+                typeof node.findAll === "function" ? node.findAll() : [];
+              const nodes = [node, ...children].filter(Boolean);
+              return nodes;
+            })
+            .reduce((a, b) => a.concat(b), [])
+            .filter(item => {
+              console.log(item.type);
+              if (item.type === "GROUP" && item.name.trim() === "Group") {
+                item.name = "AOI";
+                return true;
+              }
+              if (
+                item.type === "RECTANGLE" &&
+                item.name.trim() === "Rectangle"
+              ) {
+                item.name = "Heatmap";
+                return true;
+              }
+              return false;
+            })
+            .map(rect => {});
           frame.appendChild(result);
 
           // Check if the user has used AOI
