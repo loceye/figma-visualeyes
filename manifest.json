@@ -12,6 +12,11 @@
     {
       "name": "🔑 Set your API key",
       "command": "setApiKey"
+    },
+    { "separator": true },
+    {
+      "name": "⚙️ How many credits do I have left?",
+      "command": "learnCredits"
     }
   ]
 }

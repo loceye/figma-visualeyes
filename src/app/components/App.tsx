@@ -1,30 +1,51 @@
 import * as React from "react";
-import Header from "./Header.tsx";
-import Link from "./Link.tsx";
 import "../styles/ui.css";
 import OnBoarding from "./OnBoarding";
+import LimitReached from "./LimitReached";
 import SetApiKey from "./SetApiKey";
-import Loader from "./Loader.tsx";
-import { postImage } from "../utils/api";
+import Loader from "./Loader";
+import { postImage, getCredits } from "../utils/api";
+import { API_ERRORS } from "../utils/constants";
 
 const App = ({}) => {
   const [apiKey, setApiKey] = React.useState("");
   const [isOnBoarding, setIsOnBoarding] = React.useState(false);
   const [isSetApiKey, setIsSetApiKey] = React.useState(false);
+  const [isLimit, setIsLimit] = React.useState(false);
 
   React.useEffect(() => {
     window.onmessage = event => {
       const { type } = event.data.pluginMessage;
+      console.log(type);
 
       if (type === "set-previous-api-key") {
         const { previousApiKey } = event.data.pluginMessage;
         setApiKey(previousApiKey);
         setIsSetApiKey(true);
+      } else if (type === "show-limit-alert") {
+        setIsLimit(true);
       } else if (type === "on-boarding") {
         setIsOnBoarding(true);
       } else if (type === "ping") {
         const { message } = event.data.pluginMessage;
         parent.postMessage({ pluginMessage: { type: "pong", message } }, "*");
+      } else if (type === "learn-credits") {
+        const { apiKey } = event.data.pluginMessage;
+        const token = "Token " + apiKey;
+
+        getCredits(token)
+          .then(async credits => {
+            parent.postMessage(
+              { pluginMessage: { type: "get-credits", credits } },
+              "*"
+            );
+          })
+          .catch(error => {
+            parent.postMessage(
+              { pluginMessage: { type: "request-error", error } },
+              "*"
+            );
+          });
       } else if (type === "post-image") {
         const { apiKey, arraybuffer, hasAOI, aoi } = event.data.pluginMessage;
 
@@ -45,7 +66,6 @@ const App = ({}) => {
         }
 
         const token = "Token " + apiKey;
-
         postImage(formData, token)
           .then(async svg => {
             parent.postMessage(
@@ -54,12 +74,24 @@ const App = ({}) => {
             );
           })
           .catch(error => {
-            parent.postMessage(
-              { pluginMessage: { type: "request-error", error } },
-              "*"
-            );
+            if (error === API_ERRORS.STATUS_403) {
+              setIsLimit(true);
+              parent.postMessage(
+                { pluginMessage: { type: "reached-limit" } },
+                "*"
+              );
+            } else {
+              parent.postMessage(
+                { pluginMessage: { type: "request-error", error } },
+                "*"
+              );
+            }
           });
       }
+    };
+
+    return () => {
+      console.log("will unmount");
     };
   }, []);
 
@@ -73,6 +105,14 @@ const App = ({}) => {
           }}
         />
       )}
+      {isLimit && (
+        <LimitReached
+          onFinish={() => {
+            setIsLimit(false);
+            parent.postMessage({ pluginMessage: { type: "limit-end" } }, "*");
+          }}
+        />
+      )}
       {isSetApiKey && (
         <SetApiKey
           apiKey={apiKey}
@@ -80,7 +120,7 @@ const App = ({}) => {
           setIsSetApiKey={setIsSetApiKey}
         />
       )}
-      {!isOnBoarding && !isSetApiKey && <Loader />}
+      {!isOnBoarding && !isSetApiKey && !isLimit && <Loader />}
     </div>
   );
 };

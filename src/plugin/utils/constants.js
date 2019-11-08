@@ -81,5 +81,6 @@ export const MESSAGES = {
   noAPIKey: "✋Please enter your VisualEyes API key first",
   success: randomEmoji() + ` ${generateInterjection()}! Your heatmap is ready!`,
   successWithAOIPrompt: `🦸‍ You can impress even more your client with Areas of Interest...`,
-  onBoardingEnd: "🚢 Re-run the plugin to see the magic!"
+  onBoardingEnd: "🚢 Re-run the plugin to see the magic!",
+  setApiKey: "🔧 Please set your API key first!"
 };

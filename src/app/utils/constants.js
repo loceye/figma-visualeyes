@@ -3,6 +3,7 @@ import generateInterjection from "interjection-js";
 export const MIN_AOI_WIDTH = 70;
 export const MIN_AOI_HEIGHT = 32;
 export const API_URL = "https://api.visualeyes.design/predict/";
+export const CREDITS_URL = "https://api.visualeyes.design/credits";
 // export const API_URL = 'http://192.168.1.4:8000/predict/';
 
 export function getRandomTip() {

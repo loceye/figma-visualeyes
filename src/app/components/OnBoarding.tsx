@@ -3,7 +3,7 @@ import Header from "./Header.tsx";
 import Link from "./Link.tsx";
 import "../styles/ui.css";
 
-const OnBoarding = ({ onFinish }) => {
+const OnBoarding = ({}) => {
   const onStart = () => {
     parent.postMessage(
       { pluginMessage: { type: "set-on-boarding-cookie" } },

@@ -30,7 +30,7 @@ function showUIAsync(target, options) {
   figma.showUI(target, options);
   waitUIThread();
 
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     figma.ui.onmessage = msg => {
       if (msg.type === "pong") {
         resolve("true");
@@ -50,14 +50,14 @@ async function setApiKey(isFromHeatmap) {
       if (msg.type === "set-api-key") {
         // Set the new API key
         const { apiKey } = msg;
-        figma.root.setPluginData("apiKey", apiKey);
-        figma.root.setPluginData("hasOnBoarding", "true");
-        if (isFromHeatmap) {
-          figma.notify(MESSAGES.apiKeySuccess);
-          showOnBoarding();
-        } else {
-          figma.closePlugin(MESSAGES.apiKeySuccess);
-        }
+        figma.clientStorage.setAsync("apiKey", apiKey).then(() => {
+          if (isFromHeatmap) {
+            figma.notify(MESSAGES.apiKeySuccess);
+            showOnBoarding();
+          } else {
+            figma.closePlugin(MESSAGES.apiKeySuccess);
+          }
+        });
       } else if (msg.type === "cancel-api-key") {
         // User cancel input, so no action is taken
         figma.closePlugin(MESSAGES.apiKeyCancel);
@@ -67,8 +67,34 @@ async function setApiKey(isFromHeatmap) {
     };
 
     // Here send a message based on the cookie existance
-    const previousApiKey = figma.root.getPluginData("apiKey");
-    figma.ui.postMessage({ type: "set-previous-api-key", previousApiKey });
+    figma.clientStorage.getAsync("apiKey").then(previousApiKey => {
+      figma.ui.postMessage({ type: "set-previous-api-key", previousApiKey });
+    });
+  });
+}
+
+function learnCredits() {
+  figma.clientStorage.getAsync("apiKey").then(apiKey => {
+    if (!apiKey) {
+      figma.closePlugin(MESSAGES.setUpApiKey);
+    } else {
+      showUIAsync(__html__, { visible: false }).then(() => {
+        figma.ui.postMessage({
+          type: "learn-credits",
+          apiKey: apiKey
+        });
+
+        figma.ui.onmessage = msg => {
+          if (msg.type === "get-credits") {
+            figma.closePlugin(`🔦 You have ${msg.credits} credits left!`);
+          } else {
+            figma.closePlugin(
+              "🚨 Something went wrong! Please, contact us at info@loceye.io"
+            );
+          }
+        };
+      });
+    }
   });
 }
 
@@ -136,23 +162,28 @@ function isRectSmall(rect) {
 
 function generateHeatmap() {
   // Check API key existence
-  const apiKey = figma.root.getPluginData("apiKey");
-  if (!apiKey) {
-    figma.root.setPluginData("hasOnBoarding", "true");
-    setApiKey(true);
-  } else {
-    const hasOnBoarding = figma.root.getPluginData("hasOnBoarding") === "true";
-    if (hasOnBoarding) {
-      showUIAsync(__html__, { visible: true, width: 600, height: 500 }).then(
-        () => {
-          showOnBoarding();
-        }
-      );
+  figma.clientStorage.getAsync("apiKey").then(apiKey => {
+    if (!apiKey) {
+      figma.clientStorage.setAsync("hasOnBoarding", "true").then(() => {
+        setApiKey(true);
+      });
     } else {
-      startProcess();
+      figma.clientStorage.getAsync("hasOnBoarding").then(hasOnBoarding => {
+        if (hasOnBoarding === "true") {
+          showUIAsync(__html__, {
+            visible: true,
+            width: 600,
+            height: 500
+          }).then(() => {
+            showOnBoarding();
+          });
+        } else {
+          startProcess();
+        }
+      });
     }
-  }
-  return;
+    return;
+  });
 }
 
 function showOnBoarding() {
@@ -162,8 +193,9 @@ function showOnBoarding() {
 
   figma.ui.onmessage = msg => {
     if (msg.type === "set-on-boarding-cookie") {
-      figma.root.setPluginData("hasOnBoarding", "false");
-      figma.closePlugin(MESSAGES.onBoardingEnd);
+      figma.clientStorage.setAsync("hasOnBoarding", "false").then(() => {
+        figma.closePlugin(MESSAGES.onBoardingEnd);
+      });
     } else {
       figma.closePlugin();
     }
@@ -181,18 +213,19 @@ async function startProcess() {
     const rectangles = findAOILayers();
     const hasAOI = rectangles.length > 0;
 
-    const hasUsedAOI = figma.root.getPluginData("hasUsedAOI") === "true";
-    if (!hasUsedAOI && hasAOI) {
-      console.log(
-        "This cool guy has just used our AOI feature. Let's not spam him anymore!"
-      );
-      figma.root.setPluginData("hasUsedAOI", "true");
-    }
-
-    const apiKey = figma.root.getPluginData("apiKey");
-    const frame = selectedFrames[0];
-    const arraybuffer = await convertFrameToArraybuffer(frame);
-    postImage(arraybuffer, apiKey, frame, hasAOI, rectangles);
+    figma.clientStorage.getAsync("hasUsedAOI").then(hasUsedAOI => {
+      if (!(hasUsedAOI === "true") && hasAOI) {
+        console.log(
+          "This cool guy has just used our AOI feature. Let's not spam him anymore!"
+        );
+        figma.clientStorage.setAsync("hasUsedAOI", "true"); //here is possible error
+      }
+      figma.clientStorage.getAsync("apiKey").then(async apiKey => {
+        const frame = selectedFrames[0];
+        const arraybuffer = await convertFrameToArraybuffer(frame);
+        postImage(arraybuffer, apiKey, frame, hasAOI, rectangles);
+      });
+    });
   }
 }
 
@@ -203,73 +236,84 @@ async function convertFrameToArraybuffer(frame) {
 }
 
 function postImage(arraybuffer, apiKey, frame, hasAOI, aoi) {
-  showUIAsync(__html__, { visible: false }).then(() => {
-    figma.ui.postMessage({
-      type: "post-image",
-      arraybuffer,
-      apiKey,
-      hasAOI,
-      aoi
-    });
+  showUIAsync(__html__, { visible: false, width: 500, height: 350 }).then(
+    () => {
+      figma.ui.postMessage({
+        type: "post-image",
+        arraybuffer,
+        apiKey,
+        hasAOI,
+        aoi
+      });
 
-    figma.ui.onmessage = async msg => {
-      const { type } = msg;
+      figma.ui.onmessage = async msg => {
+        const { type } = msg;
 
-      switch (type) {
-        case "svg-result":
-          const { svg } = msg;
-          const result = figma.createNodeFromSvg(svg);
-          result.name = "VisualEyes";
-          result.children
-            .map(node => {
-              const children =
-                typeof node.findAll === "function" ? node.findAll() : [];
-              const nodes = [node, ...children].filter(Boolean);
-              return nodes;
-            })
-            .reduce((a, b) => a.concat(b), [])
-            .filter(item => {
-              console.log(item.type);
-              if (item.type === "GROUP" && item.name.trim() === "Group") {
-                item.name = "AOI";
-                return true;
+        switch (type) {
+          case "svg-result":
+            const { svg } = msg;
+            const result = figma.createNodeFromSvg(svg);
+            result.name = "VisualEyes";
+            result.children
+              .map(node => {
+                const children =
+                  typeof node.findAll === "function" ? node.findAll() : [];
+                const nodes = [node, ...children].filter(Boolean);
+                return nodes;
+              })
+              .reduce((a, b) => a.concat(b), [])
+              .filter(item => {
+                console.log(item.type);
+                if (item.type === "GROUP" && item.name.trim() === "Group") {
+                  item.name = "AOI";
+                  return true;
+                }
+                if (
+                  item.type === "RECTANGLE" &&
+                  item.name.trim() === "Rectangle"
+                ) {
+                  item.name = "Heatmap";
+                  return true;
+                }
+                return false;
+              });
+            frame.appendChild(result);
+
+            // Check if the user has used AOI
+
+            figma.clientStorage.getAsync("hasUsedAOI").then(hasUsedAOI => {
+              if (hasUsedAOI === "true") {
+                figma.closePlugin(MESSAGES.success);
+              } else {
+                figma.closePlugin(MESSAGES.successWithAOIPrompt);
               }
-              if (
-                item.type === "RECTANGLE" &&
-                item.name.trim() === "Rectangle"
-              ) {
-                item.name = "Heatmap";
-                return true;
-              }
-              return false;
-            })
-            .map(rect => {});
-          frame.appendChild(result);
+            });
+            break;
 
-          // Check if the user has used AOI
-          const hasUsedAOI = figma.root.getPluginData("hasUsedAOI") === "true";
-          if (hasUsedAOI) {
-            figma.closePlugin(MESSAGES.success);
-          } else {
-            figma.closePlugin(MESSAGES.successWithAOIPrompt);
-          }
+          case "reached-limit":
+            figma.ui.show();
+            break;
 
-          break;
+          case "request-error":
+            const { error } = msg;
+            figma.closePlugin(error);
+            break;
 
-        case "request-error":
-          const { error } = msg;
-          figma.closePlugin(error);
-
-        default:
-          figma.closePlugin();
-          break;
-      }
-    };
-  });
+          case "limit-end":
+          default:
+            figma.closePlugin();
+            break;
+        }
+      };
+    }
+  );
 }
 
 (async () => {
   switch (figma.command) {
+    case "learnCredits":
+      learnCredits();
+      break;
     case "generateHeatmap":
       generateHeatmap();
       break;
