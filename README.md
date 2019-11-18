@@ -14,12 +14,15 @@
 
 Validate your design decisions inside your favourite design tool. We combine leading neuroscience research with AI to accurately predict how people will react to your digital designs.
 
-## How it works
+## How to develop
 
-VisualEyes plugin works as simple as that:
+- Run `yarn` to install dependencies.
+- Run `yarn build:watch` to start webpack in watch mode.
+- Open `Figma` -> `Plugins` -> `Development` -> `New Plugin...` and choose `manifest.json` file from this repo.
 
-1. Select a Figma Frame and run the "🔥 Generate Heatmap" command.
-2. After a few seconds you'll get a Rectangle layer filled with the transparent Attention Heatmap inside your Frame.
+⭐ To change the UI of your plugin (the react code), start editing [App.tsx](./src/app/components/App.tsx).  
+⭐ To interact with the Figma API edit [controller.ts](./src/plugin/controller.ts).  
+⭐ Read more on the [Figma API Overview](https://www.figma.com/plugin-docs/api/api-overview/).
 
 ## Where can I find my API key?
 
