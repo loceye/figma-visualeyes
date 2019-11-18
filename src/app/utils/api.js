@@ -1,7 +1,21 @@
-import { CREDITS_URL, API_URL, API_ERRORS } from "./constants";
+import {
+  CREDITS_URL,
+  ATTENTION_MAP_URL,
+  CLARITY_URL,
+  API_ERRORS
+} from "./constants";
 
-export function postImage(body, token) {
-  return fetch(API_URL, {
+const getUrl = featureType => {
+  switch (featureType) {
+    case "attention-map":
+      return ATTENTION_MAP_URL;
+    case "clarity":
+      return CLARITY_URL;
+  }
+};
+export function postImage(body, token, featureType) {
+  const url = getUrl(featureType);
+  return fetch(url, {
     method: "POST",
     body,
     headers: {
@@ -34,6 +48,8 @@ export function postImage(body, token) {
       if (json.code !== "success") {
         throw new Error("Error during fetching the heatmap");
       }
+      console.log(json);
+
       const svg = json.svg;
       return svg;
     });

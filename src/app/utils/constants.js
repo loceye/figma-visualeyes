@@ -2,7 +2,8 @@ import generateInterjection from "interjection-js";
 
 export const MIN_AOI_WIDTH = 70;
 export const MIN_AOI_HEIGHT = 32;
-export const API_URL = "https://api.visualeyes.design/predict/";
+export const ATTENTION_MAP_URL = "https://api.visualeyes.design/predict/";
+export const CLARITY_URL = "https://api.visualeyes.design/clarity/";
 export const CREDITS_URL = "https://api.visualeyes.design/credits";
 // export const API_URL = 'http://192.168.1.4:8000/predict/';
 
@@ -65,6 +66,6 @@ export const AOI_ERRORS = {
 export const MESSAGES = {
   noSelection: "You did not select anything 😳",
   noAPIKey: "Please enter your VisualEyes API key first",
-  success: `🎉 ${generateInterjection()}! Your heatmap is ready!`,
+  success: `🎉 ${generateInterjection()}! Your result is ready!`,
   successWithAOIPrompt: `🦸‍♂️ ${generateInterjection()}! You can impress even more your client with Areas of Interest...`
 };

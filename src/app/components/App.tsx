@@ -66,7 +66,46 @@ const App = ({}) => {
         }
 
         const token = "Token " + apiKey;
-        postImage(formData, token)
+        postImage(formData, token, "attention-map")
+          .then(async svg => {
+            parent.postMessage(
+              { pluginMessage: { type: "svg-result", svg } },
+              "*"
+            );
+          })
+          .catch(error => {
+            if (error === API_ERRORS.STATUS_403) {
+              setIsLimit(true);
+              parent.postMessage(
+                { pluginMessage: { type: "reached-limit" } },
+                "*"
+              );
+            } else {
+              parent.postMessage(
+                { pluginMessage: { type: "request-error", error } },
+                "*"
+              );
+            }
+          });
+      } else if (type === "post-clarity-image") {
+        const { apiKey, arraybuffer, device } = event.data.pluginMessage;
+
+        const imgBase64 =
+          "data:image/jpg;base64," +
+          btoa(
+            new Uint8Array(arraybuffer).reduce((data, byte) => {
+              return data + String.fromCharCode(byte);
+            }, "")
+          );
+
+        var formData = new FormData();
+        formData.append("image", imgBase64 + "");
+        formData.append("svg", "true");
+        formData.append("platform", "figma");
+        formData.append("model", device);
+
+        const token = "Token " + apiKey;
+        postImage(formData, token, "clarity")
           .then(async svg => {
             parent.postMessage(
               { pluginMessage: { type: "svg-result", svg } },

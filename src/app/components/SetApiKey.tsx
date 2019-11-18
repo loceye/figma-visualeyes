@@ -5,12 +5,12 @@ import "../styles/ui.css";
 
 const SetApiKey = ({ apiKey, setApiKey, setIsSetApiKey }) => {
   const onSubmit = () => {
-    setIsSetApiKey(false);
+    setIsSetApiKey();
     parent.postMessage({ pluginMessage: { type: "set-api-key", apiKey } }, "*");
   };
 
   const onCancel = React.useCallback(() => {
-    setIsSetApiKey(false);
+    setIsSetApiKey();
     parent.postMessage({ pluginMessage: { type: "cancel-api-key" } }, "*");
   }, []);
 

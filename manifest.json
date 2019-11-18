@@ -6,17 +6,35 @@
   "ui": "dist/ui.html",
   "menu": [
     {
-      "name": "🔥 Run the plugin",
+      "name": "🔥 Attention Heatmap",
       "command": "generateHeatmap"
     },
     {
-      "name": "🔑 Set your API key",
-      "command": "setApiKey"
+      "name": "🔮 Clarity Prediction (BETA)",
+      "menu": [
+        {
+          "name": "🖥 Desktop Design",
+          "command": "clarityPredictionDesktop"
+        },
+        {
+          "name": "📱 Mobile Design",
+          "command": "clarityPredictionMobile"
+        }
+      ]
     },
     { "separator": true },
     {
+      "name": "🔑 Set my API key",
+      "command": "setApiKey"
+    },
+    {
       "name": "⚙️ How many credits do I have left?",
       "command": "learnCredits"
+    },
+    { "separator": true },
+    {
+      "name": "🙋🏻‍♂️ How to use VisualEyes?",
+      "command": "showOnBoarding"
     }
   ]
 }
